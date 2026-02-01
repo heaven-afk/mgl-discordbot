@@ -1,0 +1,28 @@
+{
+  "name": "discord-message-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for message management, backup, and automation",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "dev": "node --watch src/index.js",
+    "lint": "eslint src/**/*.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "backup",
+    "message-transfer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=16.9.0"
+  }
+}

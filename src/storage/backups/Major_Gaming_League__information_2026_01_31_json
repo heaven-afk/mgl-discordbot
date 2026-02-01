@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "channel": {
+      "id": "1446564003559243938",
+      "name": "￤information",
+      "type": 0
+    },
+    "guild": {
+      "id": "841455860940931084",
+      "name": "Major Gaming League"
+    },
+    "backup": {
+      "createdAt": "2026-01-31T08:09:01.531Z",
+      "createdBy": "heaven.oz",
+      "messageCount": 1
+    }
+  },
+  "messages": [
+    {
+      "id": "1446601550842826853",
+      "author": {
+        "id": "1446587027112853555",
+        "username": "MGL",
+        "bot": true
+      },
+      "content": "",
+      "timestamp": "2025-12-05T20:38:06.278Z",
+      "edited": "2025-12-13T07:04:54.312Z",
+      "attachments": [],
+      "embeds": [
+        {
+          "type": "rich",
+          "color": 16183793,
+          "image": {
+            "url": "https://media.discordapp.net/attachments/1270805207437152319/1360391605403779144/New_Banners_1.gif?ex=697e8be9&is=697d3a69&hm=e89eada85b978d6b056f36f454e60991b4e2fe14e47d1b0a896b3cb4bbcdb868&width=1448&height=325&",
+            "proxy_url": "https://media.discordapp.net/attachments/1270805207437152319/1360391605403779144/New_Banners_1.gif?ex=697e8be9&is=697d3a69&hm=e89eada85b978d6b056f36f454e60991b4e2fe14e47d1b0a896b3cb4bbcdb868&",
+            "width": 1536,
+            "height": 345,
+            "content_type": "image/gif",
+            "placeholder": "OggGAoAMZnZ9iTeI9QIMpCc=",
+            "placeholder_version": 1,
+            "flags": 32
+          },
+          "content_scan_version": 3
+        },
+        {
+          "type": "rich",
+          "title": "**MGL OFF SEASON RULES & POLICY**",
+          "description": "__**SEASON STRUCTURE**__  \n\n- Season begins with official registration.  \n- After the final lobby, a 10-day Review Period starts.  \n- During this time: Suspicious activity, appeals, reports, or rule violations will be reviewed.  \n- After 5 days, standings become final. No further edits will be made.\n\n**__ EVENT STRUCTURE__**\nThe event is divided into 4 categories. Qualifiers, Quarter Finals, Semi Finals and Finals. \n\n**Qualifiers**: \n- All 80 teams will be divided into 8 groups. \n- The groups will be divided to play between 2 days. Example: Groups 1-4 on Day 1, Groups 5-8 Day 2.\n\n**Quarter Finals**:\n- 40 Teams will advance to the **Quarter Finals**.\n- 1 day will be allocated towards Quarter Finals. Top 20 teams will move onto the **Semi Finals**. \n\n**Semi Finals**:\n-  20 teams will compete for a place in the top 10 to secure qualification for the **Finals**. \n\n-# **Intermission** \n-# **“Hype Day”** is a rest day for all players and managers, during which a podcast is hosted to share their expectations for the finals. After Hype Day, the finals begin with the remaining top 10 teams.\n\n**Finals**: \n- Top 10 teams compete. \n\n**NB!**\n***All finalists are required to make a TikTok post about the final event in order to qualify playing in the final round.***\n\n__**REGISTRATION RULES**__ \n\n- Only one **non AF** player allowed per team.  \n- First come, first served.  \n- Serial numbers are mandatory.  \n- Only IGNs submitted during registration or posted in the IGN Update channel will be counted for kills.  \n- Giving false info (e.g., UID, Discord ID, region, etc.) leads to player suspension for the season.  \n- If cheating is found, MGL staff will take further action.  \n- Ban durations will be communicated by the moderation team.",
+          "color": 16183793,
+          "footer": {
+            "text": "MGL CODM RANKINGS",
+            "icon_url": "https://i.ibb.co/27gnYDZD/specialguestmgl.png",
+            "proxy_icon_url": "https://images-ext-1.discordapp.net/external/eyMWBT_wxXCCIyr9KXRmIR8DVZWt_s1WANEbG3mE0O8/https/i.ibb.co/27gnYDZD/specialguestmgl.png"
+          },
+          "content_scan_version": 3
+        },
+        {
+          "type": "rich",
+          "description": "__**TRANSFER POLICY**__ \n\n- The transfer window opens after Quarter Finals and will remain open for 24 hours.  \n- Transfers outside this window are invalid.  \n- No intra-team transfers (e.g., Zen Team A to Zen  Team B) unless cleared.\n\n__**ROOM TIMES**__\n  \n- Lobby Opens: `7:45 PM`  \n- Lobby 1: `8:10 PM`  \n- Lobby 2: `8:35 PM`  \n- Lobby 3: `9:05 PM`",
+          "color": 16183793,
+          "footer": {
+            "text": "MGL CODM RANKINGS",
+            "icon_url": "https://i.ibb.co/27gnYDZD/specialguestmgl.png",
+            "proxy_icon_url": "https://images-ext-1.discordapp.net/external/eyMWBT_wxXCCIyr9KXRmIR8DVZWt_s1WANEbG3mE0O8/https/i.ibb.co/27gnYDZD/specialguestmgl.png"
+          },
+          "content_scan_version": 3
+        },
+        {
+          "type": "rich",
+          "title": "RANKINGS & POINT SYSTEM",
+          "description": "__**POINT SYSTEM**__\n**Placement Points:**\n1st - 50 pts\n2nd - 45 pts\n3rd - 40 pts\n4th - 35 pts\n5th - 30 pts\n6th-10th - 20 pts\n11th-15th - 10 pts\n16th-20th - 5 pts\n21st-25th - 0 pts\n\n**Kills:** 5 points per kill\n\n__**TEAM RANKINGS**__\nTeams are ranked by the total number of points accumulated across each day of the league. This is calculated by adding up their **daily points** to form a **collated point total**.",
+          "color": 16183793,
+          "footer": {
+            "text": "MGL CODM RANKINGS",
+            "icon_url": "https://i.ibb.co/27gnYDZD/specialguestmgl.png",
+            "proxy_icon_url": "https://images-ext-1.discordapp.net/external/eyMWBT_wxXCCIyr9KXRmIR8DVZWt_s1WANEbG3mE0O8/https/i.ibb.co/27gnYDZD/specialguestmgl.png"
+          },
+          "content_scan_version": 3
+        },
+        {
+          "type": "rich",
+          "title": "PENALTIES & VIOLATIONS",
+          "description": "**Banned Class Usage**  \n- Selected but unused: Warning  \n- Not changed before revive flight: -15 pts  \n- Used in lobby: -20 pts  \n\n**Camping Outside Zone**  \n- Staying outside zone over 40 seconds: -50 pts  \n\n**Violation Reports**  \n- All reports must include clear evidence: screenshot or recording.  \n- Reports without valid proof won’t be processed.",
+          "color": 16183793,
+          "footer": {
+            "text": "MGL CODM RANKINGS",
+            "icon_url": "https://i.ibb.co/27gnYDZD/specialguestmgl.png",
+            "proxy_icon_url": "https://images-ext-1.discordapp.net/external/eyMWBT_wxXCCIyr9KXRmIR8DVZWt_s1WANEbG3mE0O8/https/i.ibb.co/27gnYDZD/specialguestmgl.png"
+          },
+          "content_scan_version": 3
+        },
+        {
+          "type": "rich",
+          "title": "OTHERS",
+          "description": "__**BEHAVIOR & CONDUCT**__\n\n**Cheating / Exploiting / Hacking**  \n- Player: Permanently banned  \n- Team: Disqualified  \n- Ban durations communicated by moderation  \n\n**Account Sharing**  \n- Player banned for season  \n- Team may face further penalties  \n- Ban durations communicated by moderation  \n\n**Toxicity / Abuse Toward Staff**  \n- Player banned  \n- Team loses points  \n- Player kill stats may be nulled  \n- Ban durations communicated by moderation  \n\n**Match Integrity Violations**  \n- Match-fixing or intentional throwing: Disqualification  \n- Additional sanctions may follow  \n- Ban durations communicated by moderation  \n\n**Failure to Appear**  \n- If a team misses Day 1 without prior notice, their slot is forfeit.",
+          "color": 16183793,
+          "footer": {
+            "text": "MGL CODM RANKINGS",
+            "icon_url": "https://i.ibb.co/27gnYDZD/specialguestmgl.png",
+            "proxy_icon_url": "https://images-ext-1.discordapp.net/external/eyMWBT_wxXCCIyr9KXRmIR8DVZWt_s1WANEbG3mE0O8/https/i.ibb.co/27gnYDZD/specialguestmgl.png"
+          },
+          "content_scan_version": 3
+        }
+      ],
+      "reactions": []
+    }
+  ]
+}
