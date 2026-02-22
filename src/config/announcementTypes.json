@@ -1,0 +1,177 @@
+{
+    "recruitment": {
+        "embed": {
+            "title": "🛡️ Guild Recruitment",
+            "color": "#5865F2",
+            "description": "We are looking for skilled players to join our ranks! If you meet the requirements below, please submit an application.",
+            "sections": [
+                {
+                    "name": "📋 Requirements",
+                    "value": "• Active daily\n• Discord usage required\n• Respectful attitude"
+                },
+                {
+                    "name": "📅 How to Apply",
+                    "value": "Click the **Apply Now** button below to open the application form."
+                }
+            ],
+            "footer": "MGL Recruitment System"
+        },
+        "buttons": [
+            {
+                "type": "interaction",
+                "customId": "recruitment_apply",
+                "label": "Apply Now",
+                "style": "Primary",
+                "emoji": "📝"
+            }
+        ],
+        "modal": {
+            "title": "Recruitment Application",
+            "customId": "modal_recruitment",
+            "fields": [
+                {
+                    "customId": "ign",
+                    "label": "In-Game Name",
+                    "style": "Short",
+                    "placeholder": "Your exact in-game name",
+                    "required": true,
+                    "maxLength": 32
+                },
+                {
+                    "customId": "age",
+                    "label": "Age",
+                    "style": "Short",
+                    "placeholder": "18",
+                    "required": true,
+                    "maxLength": 3
+                },
+                {
+                    "customId": "experience",
+                    "label": "Experience / Previous Guilds",
+                    "style": "Paragraph",
+                    "placeholder": "List your previous guilds and experience level...",
+                    "required": true,
+                    "maxLength": 1000
+                },
+                {
+                    "customId": "reason",
+                    "label": "Why do you want to join?",
+                    "style": "Paragraph",
+                    "placeholder": "Tell us why you'd be a good fit...",
+                    "required": true,
+                    "maxLength": 1000
+                }
+            ]
+        }
+    },
+    "security": {
+        "embed": {
+            "title": "🚨 Security Alert / Report",
+            "color": "#ED4245",
+            "description": "Use this system to report security incidents, suspicious behavior, or rule violations safely and privately.",
+            "footer": "MGL Security Team"
+        },
+        "buttons": [
+            {
+                "type": "interaction",
+                "customId": "security_report",
+                "label": "Submit Report",
+                "style": "Danger",
+                "emoji": "🛡️"
+            },
+            {
+                "type": "link",
+                "url": "https://discord.com/safety",
+                "label": "Discord Safety Center",
+                "emoji": "🔗"
+            }
+        ],
+        "modal": {
+            "title": "Security Incident Report",
+            "customId": "modal_security",
+            "fields": [
+                {
+                    "customId": "target_user",
+                    "label": "Reported User (ID or Name)",
+                    "style": "Short",
+                    "placeholder": "User ID or Username",
+                    "required": true
+                },
+                {
+                    "customId": "incident_type",
+                    "label": "Type of Incident",
+                    "style": "Short",
+                    "placeholder": "Harassment, Scam, Spam, etc.",
+                    "required": true
+                },
+                {
+                    "customId": "description",
+                    "label": "Incident Description",
+                    "style": "Paragraph",
+                    "placeholder": "Describe what happened in detail...",
+                    "required": true
+                },
+                {
+                    "customId": "evidence",
+                    "label": "Evidence (Links/Screenshots)",
+                    "style": "Paragraph",
+                    "placeholder": "Main links to screenshots or message links...",
+                    "required": false
+                }
+            ]
+        }
+    },
+    "appeal": {
+        "embed": {
+            "title": "⚖️ Ban Appeal System",
+            "color": "#FEE75C",
+            "description": "If you believe you were banned or muted unfairly, you may submit an appeal here. Please be honest and provide all necessary context.",
+            "footer": "MGL appeals"
+        },
+        "buttons": [
+            {
+                "type": "interaction",
+                "customId": "appeal_submit",
+                "label": "Submit Appeal",
+                "style": "Secondary",
+                "emoji": "📨"
+            }
+        ],
+        "modal": {
+            "title": "Ban/Mute Appeal",
+            "customId": "modal_appeal",
+            "fields": [
+                {
+                    "customId": "punishment_type",
+                    "label": "Punishment Type",
+                    "style": "Short",
+                    "placeholder": "Ban, Mute, Warn",
+                    "required": true
+                },
+                {
+                    "customId": "reason_given",
+                    "label": "Reason Given (if any)",
+                    "style": "Short",
+                    "placeholder": "What reason was provided by the bot/mod?",
+                    "required": false
+                },
+                {
+                    "customId": "justification",
+                    "label": "Why should this be overturned?",
+                    "style": "Paragraph",
+                    "placeholder": "Explain your side of the story...",
+                    "required": true
+                }
+            ]
+        }
+    },
+    "custom": {
+        "embed": {
+            "title": "📢 Announcement",
+            "color": "#FFFFFF",
+            "footer": "Major Gaming League"
+        },
+        "buttons": [],
+        "modal": null
+    }
+}

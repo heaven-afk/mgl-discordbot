@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
+    "clear": "node src/clear-commands.js",
     "dev": "node --watch src/index.js",
     "lint": "eslint src/**/*.js"
   },
@@ -18,9 +19,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "archiver": "^7.0.1",
+    "axios": "^1.13.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "openai": "^6.17.0"
   },
   "engines": {
     "node": ">=16.9.0"

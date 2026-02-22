@@ -1,0 +1,18 @@
+{
+    "enabled": true,
+    "system_name": "MGL Interactive Announcements",
+    "review_channels": {
+        "recruitment": "REPLACE_WITH_CHANNEL_ID",
+        "security": "REPLACE_WITH_CHANNEL_ID",
+        "appeal": "REPLACE_WITH_CHANNEL_ID"
+    },
+    "roles": {
+        "admin": "REPLACE_WITH_ADMIN_ROLE_ID",
+        "reviewer_recruitment": "REPLACE_WITH_ROLE_ID",
+        "reviewer_security": "REPLACE_WITH_ROLE_ID"
+    },
+    "cooldowns": {
+        "modal_submit": 60,
+        "button_click": 3
+    }
+}

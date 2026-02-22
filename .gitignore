@@ -6,8 +6,8 @@ package-lock.json
 .env
 
 # Storage files
-src/storage/stickyNotes.json
-src/storage/backups/*.json
+src/storage/*.json
+src/storage/backups/*
 
 # Logs
 *.log
