@@ -20,7 +20,7 @@ module.exports = {
             '`/embed` — Create a professional formatted rich embed message',
             '`/stickynote` — Manage persistent sticky notes for channels'
         ];
-        embed.addFields({ name: '📊 General & Utility', value: generalCommands.join('\n'), inline: false });
+        embed.addFields({ name: '⎔ General & Utility', value: generalCommands.join('\n'), inline: false });
 
         // Category 2: Data Extraction & Scraping (Safe/Moderate)
         const dataCommands = [
@@ -28,14 +28,14 @@ module.exports = {
             '`/media` — Download raw images/videos/audio from a channel as a ZIP',
             '`/roster` — Scrape and export team registration data'
         ];
-        embed.addFields({ name: '📁 Data Extraction Tools', value: dataCommands.join('\n'), inline: false });
+        embed.addFields({ name: '✦ Data & Extraction', value: dataCommands.join('\n'), inline: false });
 
         // Category 3: Smart AI Assistant (Moderate)
         const aiCommands = [
             '`/smartreply` — Manually generate an AI-powered, context-aware reply',
             '`/smart` — [Classified — Contact Developer]'
         ];
-        embed.addFields({ name: '🧠 AI Assistant', value: aiCommands.join('\n'), inline: false });
+        embed.addFields({ name: '✧ AI Intelligence', value: aiCommands.join('\n'), inline: false });
 
         // Category 4: Moderation & Administration (Risky/Classified)
         const adminCommands = [
@@ -47,7 +47,7 @@ module.exports = {
             '`/archive` — [Classified — Contact Developer]',
             '`/clone` — [Classified — Contact Developer]'
         ];
-        embed.addFields({ name: '🛡️ Moderation & Admin', value: adminCommands.join('\n'), inline: false });
+        embed.addFields({ name: '⌘ System & Admin', value: adminCommands.join('\n'), inline: false });
 
         await interaction.reply({ embeds: [embed] });
     },
