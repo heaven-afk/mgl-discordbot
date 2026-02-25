@@ -94,16 +94,19 @@ class RosterParser {
                 continue;
             }
 
-            // Check for key: value pattern
-            const kvMatch = stripped.match(/^([^:]+):\s*(.*)/);
-            if (kvMatch) {
-                const rawKey = kvMatch[1].trim().toLowerCase();
+            // Check for key: value pattern using the STRIPPED line to detect the key,
+            // but extract the VALUE from the ORIGINAL line to preserve all symbols.
+            const colonIdx = stripped.indexOf(':');
+            if (colonIdx > -1) {
+                const rawKey = stripped.substring(0, colonIdx).trim().toLowerCase();
                 // Remove player prefixes like "P1 ", "P2 " etc
                 const cleanKey = rawKey.replace(/^p\d+\s+/i, '');
                 const field = RosterParser.FIELD_MAP[cleanKey];
-                const value = kvMatch[2].trim();
 
                 if (field) {
+                    // Find the colon in the ORIGINAL line and take the raw value after it
+                    const originalColonIdx = line.indexOf(':');
+                    const value = originalColonIdx > -1 ? line.substring(originalColonIdx + 1).trim() : '';
                     result.push({ type: 'field', field, value, rawKey, line, index: i });
                     continue;
                 }
@@ -129,8 +132,8 @@ class RosterParser {
                 continue;
             }
 
-            // Standalone text — potential name or header
-            result.push({ type: 'standalone', value: stripped, line, index: i });
+            // Standalone text — keep the original line text to preserve symbols
+            result.push({ type: 'standalone', value: line.trim(), line, index: i });
         }
 
         return result;
