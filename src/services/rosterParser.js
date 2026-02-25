@@ -146,6 +146,7 @@ class RosterParser {
      */
     _stripFormatting(text) {
         return text
+            .replace(/^#+\s+/g, '') // Remove heading markers like #, ##, ### at the start
             .replace(/\*\*/g, '')
             .replace(/__/g, '')
             .replace(/~~/g, '')
