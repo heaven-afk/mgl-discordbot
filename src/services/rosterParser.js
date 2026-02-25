@@ -106,7 +106,9 @@ class RosterParser {
                 if (field) {
                     // Find the colon in the ORIGINAL line and take the raw value after it
                     const originalColonIdx = line.indexOf(':');
-                    const value = originalColonIdx > -1 ? line.substring(originalColonIdx + 1).trim() : '';
+                    let value = originalColonIdx > -1 ? line.substring(originalColonIdx + 1).trim() : '';
+                    // Strip Discord formatting but leave actual symbols/emojis intact
+                    value = this._stripFormatting(value);
                     result.push({ type: 'field', field, value, rawKey, line, index: i });
                     continue;
                 }
