@@ -416,7 +416,7 @@ class RosterParser {
             return row.join(',');
         });
 
-        return Buffer.from([headers.join(','), ...rows].join('\n'), 'utf-8');
+        return Buffer.from('\uFEFF' + [headers.join(','), ...rows].join('\n'), 'utf-8');
     }
 
     /**
