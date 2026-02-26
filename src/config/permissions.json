@@ -1,0 +1,32 @@
+{
+    "roles": {
+        "tier1": [],
+        "tier2": [],
+        "tier3": []
+    },
+    "users": {
+        "tier1": [],
+        "tier2": [],
+        "tier3": []
+    },
+    "commandTiers": {
+        "ping": 1,
+        "stats": 1,
+        "embed": 1,
+        "stickynote": 1,
+        "help": 1,
+        "extract": 3,
+        "media": 2,
+        "roster": 2,
+        "smartreply": 3,
+        "announce": 3,
+        "announcement": 3,
+        "move": 2,
+        "purge": 2,
+        "backup": 3,
+        "archive": 3,
+        "clone": 3,
+        "smart": 3,
+        "manage": 3
+    }
+}

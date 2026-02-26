@@ -60,6 +60,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
 
+        // Permission Check
+        const permissionGuard = require('./modules/permissionGuard');
+        if (!permissionGuard.isAllowed(interaction.member, interaction.commandName)) {
+            return await interaction.reply({
+                content: '❌ You do not have the required permission tier to use this command.',
+                ephemeral: true
+            });
+        }
+
         try {
             await command.execute(interaction);
         } catch (error) {
