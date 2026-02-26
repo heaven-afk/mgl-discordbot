@@ -41,6 +41,10 @@ module.exports = {
                     opt.setName('slot_channel')
                         .setDescription('Channel containing the slot list message')
                 )
+                .addBooleanOption(opt =>
+                    opt.setName('use_ai')
+                        .setDescription('Use AI to parse messages for higher accuracy (Slower)')
+                )
         )
         .addSubcommand(sub =>
             sub.setName('preview')
@@ -58,6 +62,10 @@ module.exports = {
                 .addBooleanOption(opt =>
                     opt.setName('include_threads')
                         .setDescription('Also preview thread messages (default: false)')
+                )
+                .addBooleanOption(opt =>
+                    opt.setName('use_ai')
+                        .setDescription('Use AI to parse messages for higher accuracy (Slower)')
                 )
         ),
 
@@ -89,6 +97,7 @@ module.exports = {
         const format = interaction.options.getString('format') || 'csv';
         const slotMessageId = interaction.options.getString('slot_message_id');
         const slotChannel = interaction.options.getChannel('slot_channel');
+        const useAi = interaction.options.getBoolean('use_ai') || false;
 
         try {
             // Check for threads if requested
@@ -97,10 +106,10 @@ module.exports = {
 
             if (includeThreads) {
                 await interaction.editReply(`🔍 Checking for threads in **${channel.name}**...`);
-                
+
                 // Get active threads
                 const activeThreads = [...(channel.threads?.cache.values() || [])];
-                
+
                 // Get archived threads
                 let archivedThreads = [];
                 try {
@@ -136,7 +145,7 @@ module.exports = {
                             time: 60000,
                             componentType: ComponentType.Button
                         });
-                        
+
                         exportMode = confirm.customId === 'export_separate' ? 'separate' : 'single';
                         await confirm.update({ content: `⏳ Selected ${exportMode} mode. Starting extraction...`, components: [] });
                     } catch (e) {
@@ -173,7 +182,20 @@ module.exports = {
                     if (msg.author.bot) continue;
                     if (!msg.content || msg.content.trim().length < 10) continue;
 
-                    const result = rosterParser.parseMessage(msg.content);
+                    let result = null;
+                    if (useAi) {
+                        const candidates = msgs.filter(m => !m.author.bot && m.content && m.content.trim().length >= 10);
+                        const totalCandidates = candidates.length;
+                        const processedIndex = candidates.findIndex(m => m.id === msg.id) + 1;
+
+                        if (processedIndex === 1 || processedIndex % 2 === 0 || processedIndex === totalCandidates) {
+                            await interaction.editReply(`🔍 AI Extraction: **${srcChannel.name}** (${processedIndex}/${totalCandidates} messages parsed)`);
+                        }
+                        result = await rosterParser.parseMessageWithAI(msg.content);
+                    } else {
+                        result = rosterParser.parseMessage(msg.content);
+                    }
+
                     if (result && result.players.length > 0) {
                         players.push(...result.players);
                         teamCount++;
@@ -238,7 +260,7 @@ module.exports = {
 
                 const fileName = `roster_combined_${Date.now()}.${format}`;
                 if (buffer.length > 8 * 1024 * 1024) return interaction.editReply('⚠️ Export >8MB.');
-                
+
                 await interaction.editReply({
                     content: `✅ **Roster Export Complete (Single)**\n📊 Found **${totalPlayers} players** in **${totalTeams} teams**\n📁 Format: ${format.toUpperCase()}`,
                     files: [new AttachmentBuilder(buffer, { name: fileName })]
@@ -247,14 +269,14 @@ module.exports = {
             } else {
                 // Separate Files (ZIP)
                 await interaction.editReply(`📦 Zipping ${allSources.length} separate files...`);
-                
+
                 const stream = new PassThrough();
                 const archive = archiver('zip', { zlib: { level: 9 } });
-                
+
                 // Collect stream data into a buffer to attach to Discord
                 const chunks = [];
                 stream.on('data', chunk => chunks.push(chunk));
-                
+
                 // Promise resolves when zip is fully built
                 const finalizePromise = new Promise((resolve) => {
                     stream.on('end', () => resolve(Buffer.concat(chunks)));
@@ -267,7 +289,7 @@ module.exports = {
                     const fileBuffer = format === 'json'
                         ? rosterParser.toJSON(src.players, slotMap)
                         : rosterParser.toCSV(src.players, slotMap);
-                        
+
                     archive.append(fileBuffer, { name: `${safeName}.${format}` });
                 }
 
@@ -294,6 +316,7 @@ module.exports = {
         const channel = interaction.options.getChannel('channel') || interaction.channel;
         const count = interaction.options.getInteger('count') || 3;
         const includeThreads = interaction.options.getBoolean('include_threads') || false;
+        const useAi = interaction.options.getBoolean('use_ai') || false;
 
         try {
             let allMessages = [...(await channel.messages.fetch({ limit: 50 })).values()];
@@ -314,9 +337,15 @@ module.exports = {
             }
 
             let preview = '**📋 Roster Parse Preview**\n\n';
+            if (useAi) preview += '*Using AI Engine for extraction*\n\n';
 
             for (const msg of candidates) {
-                const result = rosterParser.parseMessage(msg.content);
+                let result = null;
+                if (useAi) {
+                    result = await rosterParser.parseMessageWithAI(msg.content);
+                } else {
+                    result = rosterParser.parseMessage(msg.content);
+                }
 
                 preview += `**Message by ${msg.author.username}** (${msg.createdAt.toISOString().split('T')[0]})\n`;
 

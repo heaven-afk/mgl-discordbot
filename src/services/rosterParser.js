@@ -1,3 +1,5 @@
+const aiClient = require('./aiClient');
+
 /**
  * Roster Parser Service
  * Parses semi-structured team registration messages from Discord.
@@ -77,6 +79,87 @@ class RosterParser {
         if (players.length === 0) return null;
 
         return { team, players };
+    }
+
+    /**
+     * Parse a single registration message into team + players data using AI fallback.
+     * @param {string} content - Raw message content
+     * @returns {Promise<object|null>} { team: {...}, players: [...] } or null if not a registration
+     */
+    async parseMessageWithAI(content) {
+        if (!content || content.trim().length < 10) return null;
+
+        aiClient.init();
+
+        const systemPrompt = `You are a strict data extraction tool. Extract team and player registration data from the user message into a strict JSON object.
+Schema:
+{
+  "team": { "teamName": "string|null", "clanName": "string|null", "teamManager": "string|null", "teamTag": "string|null", "tier": "string|null" },
+  "players": [
+    { "professionalName": "string|null", "ign": "string|null", "uid": "string|null", "discord": "string|null", "device": "string|null", "region": "string|null", "country": "string|null", "gender": "string|null", "serialNumber": "string|null" }
+  ]
+}
+
+- Output NOTHING BUT RAW JSON. NO Markdown formatting, NO wrapping \`\`\`json, NO text. Just the JSON object.
+- If you can't find players or assume it's just normal chat, return {"team": {}, "players": []}.
+- "device" should capture phone model if available.
+- "region" should capture continent/region.
+- Look at the text carefully to extract all players and assign them to the "players" array. Try your best even if formatting is messy.`;
+
+        try {
+            const resultText = await aiClient.generateChatResponse([
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: content }
+            ], { temperature: 0.1, maxTokens: 1000 });
+
+            if (!resultText) return null;
+
+            // Extract JSON from response (robust against text before/after or markdown wrappers)
+            const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                console.error('[RosterParser] AI returned no JSON structure:', resultText);
+                return null;
+            }
+
+            const parsed = JSON.parse(jsonMatch[0]);
+
+            if (!parsed.players || !Array.isArray(parsed.players) || parsed.players.length === 0) {
+                return null;
+            }
+
+            // Clean up missing fields according to standard RosterParser model
+            const team = {
+                teamName: parsed.team?.teamName || null,
+                clanName: parsed.team?.clanName || null,
+                teamManager: parsed.team?.teamManager || null,
+                teamTag: parsed.team?.teamTag || null,
+                tier: parsed.team?.tier || null
+            };
+
+            const players = parsed.players.map(p => ({
+                professionalName: p.professionalName || null,
+                ign: p.ign || null,
+                uid: p.uid || null,
+                teamName: team.teamName,
+                clanName: team.clanName,
+                discord: p.discord || null,
+                device: p.device || null,
+                region: p.region || null,
+                country: p.country || null,
+                gender: p.gender || null,
+                serialNumber: p.serialNumber || null
+            }));
+
+            // Filter out players without IGN
+            const validPlayers = players.filter(p => p.ign);
+            if (validPlayers.length === 0) return null;
+
+            return { team, players: validPlayers };
+
+        } catch (error) {
+            console.error('[RosterParser] AI Parse error:', error.message);
+            return null; // Fallback to failure
+        }
     }
 
     /**
