@@ -4,6 +4,7 @@ const announcementConfig = require('../config/announcementConfig.json');
 const { buildModal } = require('../modules/modalBuilder');
 const permissionGuard = require('../modules/permissionGuard');
 const cooldownManager = require('../utils/cooldownManager');
+const communityService = require('../services/communityService');
 
 /**
  * Handles button interactions
@@ -11,6 +12,13 @@ const cooldownManager = require('../utils/cooldownManager');
  */
 async function handle(interaction) {
     const customId = interaction.customId;
+
+    // ─── Community Info Buttons ──────────────────────────
+    if (customId.startsWith('community_info_')) {
+        const category = customId.replace('community_info_', '');
+        const embed = communityService.buildInfoEmbed(category);
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
 
     // 1. Identify Button Type
     // We look through our config to find which button this is

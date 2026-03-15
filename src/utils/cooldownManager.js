@@ -84,6 +84,43 @@ class CooldownManager {
     }
 
     /**
+     * Generic cooldown map (string key -> timestamp)
+     * Used by Buttons, FAQs, etc.
+     */
+    genericCooldowns = new Map();
+
+    /**
+     * Check generic cooldown
+     */
+    checkCooldown(key) {
+        const now = Date.now();
+        const lastUse = this.genericCooldowns.get(key);
+        if (!lastUse) return false;
+        
+        // Stored value is the expiration timestamp
+        return now < lastUse;
+    }
+
+    /**
+     * Set generic cooldown
+     */
+    setCooldown(key, cooldownSeconds) {
+        this.genericCooldowns.set(key, Date.now() + (cooldownSeconds * 1000));
+    }
+
+    /**
+     * Get remaining generic cooldown time in seconds
+     */
+    getRemainingTime(key) {
+        const now = Date.now();
+        const expiresAt = this.genericCooldowns.get(key);
+        if (!expiresAt) return 0;
+        
+        const remaining = Math.max(0, expiresAt - now) / 1000;
+        return remaining;
+    }
+
+    /**
      * Clean up old cooldowns (run periodically)
      */
     cleanup() {
@@ -105,6 +142,12 @@ class CooldownManager {
         for (const [userId, timestamp] of this.autoUserCooldowns.entries()) {
             if (now - timestamp > maxAge) {
                 this.autoUserCooldowns.delete(userId);
+            }
+        }
+
+        for (const [key, expiresAt] of this.genericCooldowns.entries()) {
+            if (now > expiresAt) {
+                this.genericCooldowns.delete(key);
             }
         }
     }
