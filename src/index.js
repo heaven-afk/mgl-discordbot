@@ -8,7 +8,6 @@ const smartConfig = require('./services/smartConfig');
 const memoryService = require('./services/memoryService');
 const cooldownManager = require('./utils/cooldownManager');
 const aiClient = require('./services/aiClient');
-const faqService = require('./services/faqService');
 const keepAlive = require('./keepAlive');
 
 const client = new Client({
@@ -45,12 +44,9 @@ client.once(Events.ClientReady, (c) => {
     // Initialize AI client
     aiClient.init();
 
-    console.log(`[FAQ] Loaded ${faqService.listEntries().length} FAQ entries.`);
-
     // Start cooldown cleanup interval (every 5 minutes)
     setInterval(() => {
         cooldownManager.cleanup();
-        faqService.cleanupCooldowns();
     }, 5 * 60 * 1000);
 });
 
@@ -130,23 +126,6 @@ client.on(Events.MessageCreate, async (message) => {
     // Auto assistant logic
     if (message.author.bot) return; // Ignore bot messages
     if (!message.guild) return; // Ignore DMs
-
-    // FAQ auto-reply — check BEFORE AI auto-assistant
-    if (faqService.isEnabled()) {
-        const memberRoleIds = message.member?.roles?.cache?.map(r => r.id) || [];
-        const faqMatch = faqService.findMatch(message.content, message.channel.id, memberRoleIds);
-        if (faqMatch) {
-            try {
-                const faqResponse = faqService.buildResponse(faqMatch);
-                faqService.setCooldown(faqMatch.id, message.channel.id);
-                await message.reply(faqResponse);
-                console.log(`[FAQ] Matched "${faqMatch.id}" for ${message.author.tag}`);
-                return; // Skip AI auto-assistant
-            } catch (error) {
-                console.error('[FAQ] Error sending response:', error);
-            }
-        }
-    }
 
     const enabled = smartConfig.get('enabled');
     const auto = smartConfig.get('auto');
