@@ -91,7 +91,7 @@ module.exports = {
         const content = interaction.options.getString('content');
         const channel = interaction.options.getChannel('channel') || interaction.channel;
         const outputMode = interaction.options.getString('mode') || 'embed';
-        const title = interaction.options.getString('title') || '<:mgl_logo:1234567890> MGL Sticky Note';
+        const title = interaction.options.getString('title') || '<:MGLwhite:1405648585218982009> MGL Sticky Note';
         const color = interaction.options.getString('color') || '#FFFF00';
         const repostThreshold = interaction.options.getInteger('repost_after') || 1;
         const repostInterval = interaction.options.getInteger('repost_interval') || null;
@@ -118,7 +118,7 @@ module.exports = {
         });
 
         const embed = new EmbedBuilder()
-            .setTitle('<:mgl_logo:1234567890> MGL Sticky Note Created')
+            .setTitle('<:MGLwhite:1405648585218982009> MGL Sticky Note Created')
             .setColor('#2ECC71')
             .addFields(
                 { name: 'Channel', value: `<#${channel.id}>`, inline: true },
@@ -197,7 +197,7 @@ module.exports = {
         }
 
         const embed = new EmbedBuilder()
-            .setTitle(`<:mgl_logo:1234567890> All MGL Sticky Notes (${stickies.length})`)
+            .setTitle(`<:MGLwhite:1405648585218982009> All MGL Sticky Notes (${stickies.length})`)
             .setColor('#FFFF00')
             .setTimestamp();
 
@@ -241,7 +241,7 @@ module.exports = {
         try {
             const payload = stickyService.previewSticky(channel.id);
             payload.ephemeral = true;
-            payload.content = `<:mgl_logo:1234567890> **Preview** of sticky in <#${channel.id}>:\n${payload.content || ''}`;
+            payload.content = `<:MGLwhite:1405648585218982009> **Preview** of sticky in <#${channel.id}>:\n${payload.content || ''}`;
             await interaction.reply(payload);
         } catch (error) {
             await interaction.reply({ content: `❌ ${error.message}`, ephemeral: true });
