@@ -7,7 +7,7 @@ module.exports = {
 
     async execute(interaction) {
         const embed = new EmbedBuilder()
-            .setTitle('🤖 MGL 2026 Bot Commands')
+            .setTitle('<:MGLwhite:1405648585218982009> MGL 2026 Bot Commands')
             .setDescription('Here is a list of all available commands, categorized by functionality. Use `/` to see full details and options for each command.')
             .setColor('#2b2d31')
             .setThumbnail(interaction.client.user.displayAvatarURL())
@@ -18,7 +18,7 @@ module.exports = {
             '`/ping` — Check the bot\'s latency and uptime',
             '`/stats` — Display server analytics and statistics',
             '`/embed` — Create a professional formatted rich embed message',
-            '`/stickynote` — Manage persistent sticky notes for channels'
+            '`/sticky` — Manage persistent MGL sticky notes for channels'
         ];
         embed.addFields({ name: '🟦 General & Utility', value: generalCommands.join('\n'), inline: false });
 
@@ -26,7 +26,8 @@ module.exports = {
         const dataCommands = [
             '`/extract` — Export a channel\'s messages based on filters (JSON/CSV)',
             '`/media` — Download raw images/videos/audio from a channel as a ZIP',
-            '`/roster` — Scrape and export team registration data'
+            '`/roster` — Scrape and export team registration data',
+            '`/tierscan` — Admin tool to scan channels for tier change requests'
         ];
         embed.addFields({ name: '🟩 Data & Extraction', value: dataCommands.join('\n'), inline: false });
 
