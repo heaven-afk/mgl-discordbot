@@ -76,7 +76,7 @@ class StickyService {
             content: options.content,
             outputMode: options.outputMode || 'embed',
             embedSettings: options.embedSettings || {
-                title: options.title || 'Sticky Note',
+                title: options.title || '<:mgl_logo:1234567890> MGL Sticky Note',
                 color: options.color || '#FFFF00',
                 footer: options.footer || 'This message stays at the bottom.'
             },
@@ -199,7 +199,7 @@ class StickyService {
 
         if (note.outputMode === 'embed') {
             const embed = new EmbedBuilder()
-                .setTitle(note.embedSettings?.title || 'Sticky Note')
+                .setTitle(note.embedSettings?.title || '<:mgl_logo:1234567890> MGL Sticky Note')
                 .setDescription(note.content)
                 .setColor(note.embedSettings?.color || '#FFFF00')
                 .setTimestamp();
@@ -211,7 +211,7 @@ class StickyService {
             payload.embeds = [embed];
         } else {
             // Text mode
-            payload.content = `📌 **Sticky Note**\n${note.content}`;
+            payload.content = `<:mgl_logo:1234567890> **MGL Sticky Note**\n${note.content}`;
         }
 
         // Add button components if configured
