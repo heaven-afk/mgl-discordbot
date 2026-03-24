@@ -72,67 +72,87 @@ class ExtractService {
      */
     async processJob(job, interaction) {
         try {
-            let lastId = null;
-            let keepFetching = true;
+            // Build targets array
+            const targets = [job.channel];
+            if (job.options.includeThreads && job.channel.threads) {
+                try {
+                    const activeThreads = await job.channel.threads.fetchActive().catch(() => ({ threads: new Map() }));
+                    for (const [, thread] of activeThreads.threads) {
+                        targets.push(thread);
+                    }
+                } catch (e) {
+                    console.error('[Extract] Error fetching threads:', e);
+                }
+            }
+
+            let keepFetchingGlobal = true;
 
             // Send initial confirmation if not deferred
             if (!interaction.deferred && !interaction.replied) {
                 await interaction.reply({
-                    content: `Started extraction job \`${job.id}\`. Target: ${job.channel}. Limits: ${job.options.limit} messages.`,
+                    content: `Started extraction job \`${job.id}\`. Target: ${job.channel}${job.options.includeThreads ? ' + threads' : ''}. Limits: ${job.options.limit} messages.`,
                     ephemeral: true
                 });
             }
 
-            while (keepFetching && job.status === 'running') {
-                // Rate limit guard
-                await new Promise(r => setTimeout(r, 600));
+            for (const targetChannel of targets) {
+                if (!keepFetchingGlobal || job.status !== 'running') break;
 
-                const fetchOptions = { limit: 100 };
-                if (lastId) fetchOptions.before = lastId;
+                let lastId = null;
+                let keepFetchingChannel = true;
 
-                const batch = await job.channel.messages.fetch(fetchOptions);
+                while (keepFetchingChannel && keepFetchingGlobal && job.status === 'running') {
+                    // Rate limit guard
+                    await new Promise(r => setTimeout(r, 600));
 
-                if (batch.size === 0) {
-                    keepFetching = false;
-                    break;
-                }
+                    const fetchOptions = { limit: 100 };
+                    if (lastId) fetchOptions.before = lastId;
 
-                job.stats.fetched += batch.size;
-                lastId = batch.last().id;
-                job.stats.oldestMessageDate = batch.last().createdAt;
+                    const batch = await targetChannel.messages.fetch(fetchOptions).catch(() => new Collection());
 
-                // Process batch
-                for (const msg of batch.values()) {
-                    job.stats.processed++;
-
-                    // Date range checks
-                    if (job.options.fromDate && msg.createdTimestamp < job.options.fromDate) {
-                        keepFetching = false; // We went too far back
-                        break; // Stop processing this batch
-                    }
-                    if (job.options.toDate && msg.createdTimestamp > job.options.toDate) {
-                        continue; // Skip but keep searching older
-                    }
-
-                    // Apply filters
-                    if (this.matchesFilters(msg, job.options)) {
-                        job.messages.push(this.formatMessageObject(msg, job.options));
-                        job.stats.kept++;
-                    }
-
-                    // Limit check
-                    if (job.stats.kept >= job.options.limit) {
-                        keepFetching = false;
+                    if (batch.size === 0) {
+                        keepFetchingChannel = false;
                         break;
                     }
-                }
 
-                // Progress update every 500 fetched
-                if (Date.now() - job.lastUpdate > 5000) {
-                    await interaction.editReply({
-                        content: `Extracting... Job \`${job.id}\`\nFetched: ${job.stats.fetched}\nKept: ${job.stats.kept}/${job.options.limit}\nOldest: ${job.stats.oldestMessageDate?.toISOString().split('T')[0] || 'N/A'}`
-                    }).catch(() => { });
-                    job.lastUpdate = Date.now();
+                    job.stats.fetched += batch.size;
+                    lastId = batch.last().id;
+                    job.stats.oldestMessageDate = batch.last().createdAt;
+
+                    // Process batch
+                    for (const msg of batch.values()) {
+                        job.stats.processed++;
+
+                        // Date range checks
+                        if (job.options.fromDate && msg.createdTimestamp < job.options.fromDate) {
+                            keepFetchingChannel = false; // We went too far back in this specific channel
+                            break; 
+                        }
+                        if (job.options.toDate && msg.createdTimestamp > job.options.toDate) {
+                            continue; 
+                        }
+
+                        // Apply filters
+                        if (this.matchesFilters(msg, job.options)) {
+                            job.messages.push(this.formatMessageObject(msg, job.options));
+                            job.stats.kept++;
+                        }
+
+                        // Limit check
+                        if (job.stats.kept >= job.options.limit) {
+                            keepFetchingGlobal = false;
+                            keepFetchingChannel = false;
+                            break;
+                        }
+                    }
+
+                    // Progress update every 5000ms
+                    if (Date.now() - job.lastUpdate > 5000) {
+                        await interaction.editReply({
+                            content: `Extracting... Job \`${job.id}\`\nTarget: <#${targetChannel.id}>\nFetched: ${job.stats.fetched}\nKept: ${job.stats.kept}/${job.options.limit}\nOldest: ${job.stats.oldestMessageDate?.toISOString().split('T')[0] || 'N/A'}`
+                        }).catch(() => { });
+                        job.lastUpdate = Date.now();
+                    }
                 }
             }
 

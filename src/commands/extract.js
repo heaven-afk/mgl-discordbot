@@ -30,6 +30,8 @@ module.exports = {
                 .addBooleanOption(option =>
                     option.setName('include_bots').setDescription('Include bot messages? (default: false)'))
                 .addBooleanOption(option =>
+                    option.setName('include_threads').setDescription('Include active threads in search? (default: false)'))
+                .addBooleanOption(option =>
                     option.setName('attachments_only').setDescription('Only messages with attachments?'))
                 .addBooleanOption(option =>
                     option.setName('links_only').setDescription('Only messages with links?'))
@@ -81,6 +83,7 @@ module.exports = {
                 query: interaction.options.getString('query'),
                 user: interaction.options.getUser('user'),
                 includeBots: interaction.options.getBoolean('include_bots') || false,
+                includeThreads: interaction.options.getBoolean('include_threads') || false,
                 attachmentsOnly: interaction.options.getBoolean('attachments_only') || false,
                 linksOnly: interaction.options.getBoolean('links_only') || false,
                 anonymize: interaction.options.getBoolean('anonymize') || false,
