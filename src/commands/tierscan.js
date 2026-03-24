@@ -12,6 +12,8 @@ module.exports = {
                     opt.setName('channel').setDescription('Specific channel to scan (omit for all configured)'))
                 .addIntegerOption(opt =>
                     opt.setName('limit').setDescription('Max messages to scan (default: 100)').setMinValue(10).setMaxValue(500))
+                .addBooleanOption(opt =>
+                    opt.setName('include_threads').setDescription('Scan threads in the channel (default: true)'))
         )
         .addSubcommand(sub =>
             sub.setName('refresh')
@@ -86,6 +88,7 @@ module.exports = {
     async handleRun(interaction) {
         const channel = interaction.options.getChannel('channel');
         const limit = interaction.options.getInteger('limit');
+        const includeThreads = interaction.options.getBoolean('include_threads') ?? true;
 
         await interaction.deferReply({ ephemeral: true });
 
@@ -94,14 +97,26 @@ module.exports = {
                 // Scan specific channel
                 const records = await tierScanService.scanChannel(channel, limit);
 
+                if (includeThreads && channel.threads) {
+                    try {
+                        const threads = await channel.threads.fetchActive().catch(() => ({ threads: new Map() }));
+                        for (const [, thread] of threads.threads) {
+                            const threadRecords = await tierScanService.scanChannel(thread, limit);
+                            records.push(...threadRecords);
+                        }
+                    } catch (e) {
+                        console.error('[TierScan] Error scanning threads for channel', channel.id, e);
+                    }
+                }
+
                 if (records.length === 0) {
-                    return interaction.editReply(`🔍 Scanned <#${channel.id}> — no new tier requests found.`);
+                    return interaction.editReply(`🔍 Scanned <#${channel.id}>${includeThreads ? ' and its active threads' : ''} — no new tier requests found.`);
                 }
 
                 const embed = new EmbedBuilder()
                     .setTitle('🔍 Tier Scan Results')
                     .setColor('#2ECC71')
-                    .setDescription(`Found **${records.length}** new tier request(s) in <#${channel.id}>`)
+                    .setDescription(`Found **${records.length}** new tier request(s) in <#${channel.id}>${includeThreads ? ' and its active threads' : ''}`)
                     .setTimestamp();
 
                 for (const record of records.slice(0, 5)) {
