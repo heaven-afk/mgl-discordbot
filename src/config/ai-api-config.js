@@ -1,15 +1,23 @@
-// Simple AI Configuration - Ollama (Local, Free, Unlimited)
+// AI Configuration - Support for Gemini, Claude, and OpenAI
 require('dotenv').config();
 
 module.exports = {
-    // Ollama - Local AI (no API key needed!)
-    ollama: {
-        baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-        defaultModel: process.env.OLLAMA_MODEL || 'phi',
-        timeout: 90000  // 90 seconds for first-time model loading
+    // Determine which API to use globally. Default to 'gemini'
+    provider: process.env.AI_PROVIDER || 'gemini', // 'gemini', 'claude', or 'openai'
+
+    // Google Gemini (Primary)
+    gemini: {
+        apiKey: process.env.GEMINI_API_KEY,
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash'
     },
 
-    // OpenAI - Optional premium fallback
+    // Anthropic Claude
+    anthropic: {
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-latest'
+    },
+
+    // OpenAI (Fallback/Legacy)
     openai: {
         apiKey: process.env.OPENAI_API_KEY,
         baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
@@ -20,6 +28,6 @@ module.exports = {
     defaults: {
         maxTokens: 500,
         temperature: 0.7,
-        timeout: 90000  // Increased for model loading
+        timeout: 90000 
     }
 };

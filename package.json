@@ -19,6 +19,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.87.0",
+    "@google/genai": "^1.49.0",
     "archiver": "^7.0.1",
     "axios": "^1.13.5",
     "discord.js": "^14.14.1",

@@ -112,8 +112,7 @@ class MediaService {
             }
 
             // ZIP bundling variables
-            let currentArchive = archiver('zip', { zlib: { level: 9 } });
-            let currentStream = new PassThrough();
+            let currentArchive;
             let currentZipSize = 0;
             let currentZipFiles = 0;
             let currentZipBuffers = [];
@@ -121,15 +120,12 @@ class MediaService {
             // Reinitialize the ZIP stream
             const resetZip = () => {
                 currentArchive = archiver('zip', { zlib: { level: 9 } });
-                currentStream = new PassThrough();
                 currentZipSize = 0;
                 currentZipFiles = 0;
                 currentZipBuffers = [];
-                currentStream.on('data', chunk => {
+                currentArchive.on('data', chunk => {
                     currentZipBuffers.push(chunk);
-                    currentZipSize += chunk.length;
                 });
-                currentArchive.pipe(currentStream);
             };
 
             // Send the current ZIP to Discord
@@ -138,10 +134,7 @@ class MediaService {
 
                 await currentArchive.finalize();
 
-                // Wait for stream to finish
-                const finalBuffer = await new Promise((resolve) => {
-                    currentStream.on('end', () => resolve(Buffer.concat(currentZipBuffers)));
-                });
+                const finalBuffer = Buffer.concat(currentZipBuffers);
 
                 job.stats.zipsSent++;
                 const fileName = `media_${job.channel.name}_part${job.stats.zipsSent}.zip`;
