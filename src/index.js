@@ -42,7 +42,11 @@ client.once(Events.ClientReady, (c) => {
     stickyService.init(client);
 
     // Initialize AI client
-    aiClient.init();
+    try {
+        aiClient.init();
+    } catch (e) {
+        console.warn(`[WARNING] AI Client failed to initialize: ${e.message}. AI features will be disabled.`);
+    }
 
     // Start cooldown cleanup interval (every 5 minutes)
     setInterval(() => {
