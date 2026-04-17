@@ -228,12 +228,14 @@ Schema:
      * Remove Discord formatting markers (**, __, ~~, etc.)
      */
     _stripFormatting(text) {
-        return text
-            .replace(/^#+\s+/g, '') // Remove heading markers like #, ##, ### at the start
+        return String(text)
+            .replace(/^[>#]+\s*/g, '') // Remove blockquotes (>) and headings (#) at the start
             .replace(/\*\*/g, '')
             .replace(/__/g, '')
             .replace(/~~/g, '')
             .replace(/`/g, '')
+            .replace(/\|\|/g, '') // Remove spoiler tags ||
+            .replace(/[\u200B-\u200D\uFEFF\u200E\u200F\r]/g, '') // Remove invisible layout chars
             .trim();
     }
 
@@ -277,94 +279,102 @@ Schema:
 
     /**
      * Extract player blocks from classified lines.
-     * A player block starts with either:
-     *   - A "Professional Name:" field
-     *   - A standalone text line followed by player fields (IGN, UID, etc.)
+     * Uses a grouping strategy separating players when duplicate fields (like IGN) are hit.
      */
     _extractPlayers(parsed, team) {
-        const players = [];
-        let currentPlayer = null;
+        let players = [];
+        let currentFields = [];
 
-        const flushPlayer = () => {
-            if (currentPlayer && currentPlayer.ign) {
-                // Inherit team info
-                currentPlayer.teamName = currentPlayer.teamName || team.teamName;
-                currentPlayer.clanName = currentPlayer.clanName || team.clanName;
-                players.push({ ...currentPlayer });
-            }
-            currentPlayer = null;
-        };
-
+        // Group into raw player blocks
         for (let i = 0; i < parsed.length; i++) {
             const item = parsed[i];
-
-            // Skip consumed, empty, separator, meta, team fields
-            if (item._consumed) continue;
-            if (item.type === 'empty' || item.type === 'separator' || item.type === 'meta' || item.type === 'numbered') continue;
-            if (item.type === 'field' && RosterParser.TEAM_FIELDS.has(item.field)) continue;
-
-            // Player field: start or add to current player
-            if (item.type === 'field' && RosterParser.PLAYER_FIELDS.has(item.field)) {
-                if (!currentPlayer) {
-                    currentPlayer = this._emptyPlayer();
-                }
-
-                // If we hit a new professionalName field and current player already has one, flush
-                if (item.field === 'professionalName' && currentPlayer.professionalName) {
-                    flushPlayer();
-                    currentPlayer = this._emptyPlayer();
-                }
-
-                // If we hit a new IGN and current player already has one, flush
-                if (item.field === 'ign' && currentPlayer.ign) {
-                    flushPlayer();
-                    currentPlayer = this._emptyPlayer();
-                }
-
-                currentPlayer[item.field] = item.value;
-
-                // Handle region containing country flag emoji
-                if (item.field === 'region' && !currentPlayer.country) {
-                    const countryMatch = this._extractCountryFromRegion(item.value);
-                    if (countryMatch) {
-                        currentPlayer.country = countryMatch;
-                    }
-                }
-
+            
+            if (item._consumed || item.type === 'empty' || item.type === 'separator' || item.type === 'meta' || item.type === 'numbered' || (item.type === 'field' && RosterParser.TEAM_FIELDS.has(item.field))) {
                 continue;
             }
 
-            // Standalone line — check if it's a Professional Name
-            if (item.type === 'standalone') {
-                // Look ahead: if the next meaningful item is a player field (like IGN), this is a pro name
-                const nextField = this._findNextField(parsed, i + 1);
+            if (item.type === 'field' && RosterParser.PLAYER_FIELDS.has(item.field)) {
+                // Split if currentFields already has this exact field (e.g., another IGN)
+                const alreadyHasField = currentFields.some(f => f.type === 'field' && f.field === item.field);
+                if (alreadyHasField && ['ign', 'professionalName', 'uid', 'discord', 'device', 'country'].includes(item.field)) {
+                    const block = [...currentFields];
+                    currentFields = [];
+                    
+                    // Move trailing standalones to new block IF they are closer to `item` than to the preceding fields in `block`
+                    while (block.length > 0 && block[block.length - 1].type === 'standalone') {
+                        const trailing = block[block.length - 1];
+                        const lastRealField = block.slice().reverse().find(f => f.type === 'field');
+                        
+                        const distToPrev = lastRealField ? (trailing.index - lastRealField.index) : 999;
+                        const distToNext = item.index - trailing.index;
 
-                if (nextField && RosterParser.PLAYER_FIELDS.has(nextField.field)) {
-                    // This standalone line is a professional name
-                    flushPlayer();
-                    currentPlayer = this._emptyPlayer();
-                    currentPlayer.professionalName = item.value;
-                    continue;
+                        if (distToNext < distToPrev) {
+                            currentFields.unshift(block.pop());
+                        } else {
+                            break;
+                        }
+                    }
+
+                    players.push(block);
                 }
+                
+                currentFields.push(item);
+            } else if (item.type === 'standalone') {
+                 if (item.value.length < 50) currentFields.push(item);
+            }
+        }
+        
+        if (currentFields.length > 0) players.push(currentFields);
+
+        // Process blocks into player objects
+        const finalPlayers = [];
+        for (const block of players) {
+            let p = this._emptyPlayer();
+            let standalones = [];
+
+            for (const item of block) {
+                if (item.type === 'field') {
+                    if (item.field === 'region' || item.field === 'country') {
+                        const match = this._extractCountryFromRegion(item.value);
+                        if (match) {
+                            if (item.field === 'region' && !p.country) p.country = match.country;
+                            p[item.field] = match.cleanRegion || match.country;
+                        } else {
+                            p[item.field] = item.value;
+                        }
+                    } else {
+                        p[item.field] = item.value;
+                    }
+                } else if (item.type === 'standalone') {
+                    standalones.push(item.value);
+                }
+            }
+
+            if (!p.professionalName && standalones.length > 0) {
+                p.professionalName = standalones[standalones.length - 1];
+            }
+
+            if (p.ign) {
+                // Auto-Correct IGN / Pro Name if swapped manually by user (based on symbol density)
+                if (p.professionalName && p.ign) {
+                    const standardRegex = /[a-zA-Z0-9\s_]/g;
+                    const proSymbols = p.professionalName.replace(standardRegex, '').length;
+                    const ignSymbols = p.ign.replace(standardRegex, '').length;
+                    
+                    if (proSymbols > ignSymbols && ignSymbols <= 1 && proSymbols > 1) {
+                         const temp = p.professionalName; 
+                         p.professionalName = p.ign; 
+                         p.ign = temp;
+                    }
+                }
+                
+                p.teamName = p.teamName || team.teamName;
+                p.clanName = p.clanName || team.clanName;
+                finalPlayers.push(p);
             }
         }
 
-        // Flush last player
-        flushPlayer();
-
-        return players;
-    }
-
-    /**
-     * Find the next field-type item in parsed array
-     */
-    _findNextField(parsed, startIndex) {
-        for (let i = startIndex; i < parsed.length; i++) {
-            if (parsed[i].type === 'field') return parsed[i];
-            if (parsed[i].type === 'standalone') return null; // Another standalone before a field — break
-            // Skip empty/separator/meta
-        }
-        return null;
+        return finalPlayers;
     }
 
     /**
@@ -386,7 +396,9 @@ Schema:
 
         // Check for flag emoji in the string
         for (const [flag, country] of Object.entries(flagMap)) {
-            if (region.includes(flag)) return country;
+            if (region.includes(flag)) {
+                return { country, cleanRegion: region.replace(flag, '').trim() };
+            }
         }
 
         return null;
