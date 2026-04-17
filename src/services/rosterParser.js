@@ -23,7 +23,11 @@ class RosterParser {
         'in game name': 'ign',
         'in-game name': 'ign',
         'ingame name': 'ign',
+        'ign + discord': 'ign',
+        'player': 'ign',
+        'p1': 'ign', 'p2': 'ign', 'p3': 'ign', 'p4': 'ign', 'p5': 'ign', 'p6': 'ign', 'p7': 'ign', 'p8': 'ign',
         'uid': 'uid',
+        'udi': 'uid',
         'user id': 'uid',
         'discord': 'discord',
         'discord id': 'discord',
@@ -229,7 +233,7 @@ Schema:
      */
     _stripFormatting(text) {
         return String(text)
-            .replace(/^[>#]+\s*/g, '') // Remove blockquotes (>) and headings (#) at the start
+            .replace(/^[>#\-\s]+/g, '') // Remove blockquotes, headings, lists, and leading spaces
             .replace(/\*\*/g, '')
             .replace(/__/g, '')
             .replace(/~~/g, '')
