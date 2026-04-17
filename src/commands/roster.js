@@ -244,15 +244,15 @@ module.exports = {
                     ? rosterParser.toJSON(combinedPlayers, slotMap, 'Main/Mixed')
                     // Override the normal players map in parser to use p._sourceName dynamically
                     : Buffer.from([
-                        ['SLOT', 'Professional Name', 'IGN', 'UID', 'Team Name', 'Clan Name', 'Discord', 'Device', 'Region', 'Country', 'Serial Number', 'Source Thread'].join(','),
+                        ['SLOT', 'Professional Name', 'IGN', 'Team Name', 'Clan Name', 'Device', 'Region', 'Country', 'Source Thread'].join(','),
                         ...combinedPlayers.map(p => {
                             const slot = slotMap ? (rosterParser.matchSlot(p.teamName, slotMap) || '') : '';
                             return [
                                 slot, rosterParser._csvEscape(p.professionalName || ''), rosterParser._csvEscape(p.ign || ''),
-                                rosterParser._csvEscape(p.uid || ''), rosterParser._csvEscape(p.teamName || ''),
-                                rosterParser._csvEscape(p.clanName || ''), rosterParser._csvEscape(p.discord || ''),
+                                rosterParser._csvEscape(p.teamName || ''),
+                                rosterParser._csvEscape(p.clanName || ''),
                                 rosterParser._csvEscape(p.device || ''), rosterParser._csvEscape(p.region || ''),
-                                rosterParser._csvEscape(p.country || ''), rosterParser._csvEscape(p.serialNumber || ''),
+                                rosterParser._csvEscape(p.country || ''),
                                 rosterParser._csvEscape(p._sourceName || 'Unknown')
                             ].join(',');
                         })

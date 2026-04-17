@@ -491,7 +491,7 @@ Schema:
      * Convert parsed results to CSV buffer
      */
     toCSV(allPlayers, slotMap = null, sourceName = null) {
-        const headers = ['SLOT', 'Professional Name', 'IGN', 'UID', 'Team Name', 'Clan Name', 'Discord', 'Device', 'Region', 'Country', 'Serial Number'];
+        const headers = ['SLOT', 'Professional Name', 'IGN', 'Team Name', 'Clan Name', 'Device', 'Region', 'Country'];
         if (sourceName) headers.push('Source');
 
         const rows = allPlayers.map(p => {
@@ -500,14 +500,11 @@ Schema:
                 slot,
                 this._csvEscape(p.professionalName || ''),
                 this._csvEscape(p.ign || ''),
-                this._csvEscape(p.uid || ''),
                 this._csvEscape(p.teamName || ''),
                 this._csvEscape(p.clanName || ''),
-                this._csvEscape(p.discord || ''),
                 this._csvEscape(p.device || ''),
                 this._csvEscape(p.region || ''),
-                this._csvEscape(p.country || ''),
-                this._csvEscape(p.serialNumber || '')
+                this._csvEscape(p.country || '')
             ];
 
             if (sourceName) row.push(this._csvEscape(sourceName));
