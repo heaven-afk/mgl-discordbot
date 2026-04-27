@@ -17,6 +17,10 @@ module.exports = {
                 opt.setName('emoji')
                 .setDescription('The emoji to react with (custom emoji or unicode)')
                 .setRequired(true))
+            .addBooleanOption(opt =>
+                opt.setName('include_bots')
+                .setDescription('Include messages sent by bots (default: false)')
+                .setRequired(false))
         )
         .addSubcommand(sub =>
             sub.setName('scan')
@@ -34,6 +38,10 @@ module.exports = {
                 .setDescription('How many past messages to scan (default 50, max 100)')
                 .setMinValue(1)
                 .setMaxValue(100)
+                .setRequired(false))
+            .addBooleanOption(opt =>
+                opt.setName('include_bots')
+                .setDescription('Include messages sent by bots (default: false)')
                 .setRequired(false))
         )
         .addSubcommand(sub =>
@@ -55,6 +63,7 @@ module.exports = {
         if (sub === 'add') {
             const channel = interaction.options.getChannel('channel');
             let emoji = interaction.options.getString('emoji');
+            const includeBots = interaction.options.getBoolean('include_bots') || false;
             
             // Extract custom emoji ID if it's formatted like <:name:123456789> or <a:name:123456789>
             const customEmojiMatch = emoji.match(/<a?:[a-zA-Z0-9_]+:(\d+)>/);
@@ -62,10 +71,10 @@ module.exports = {
                 emoji = customEmojiMatch[1];
             }
             
-            autoreactService.addChannel(channel.id, emoji);
+            autoreactService.addChannel(channel.id, emoji, includeBots);
             
             await interaction.reply({
-                content: `✅ Added auto-reaction. I will now react with ${interaction.options.getString('emoji')} to all messages in <#${channel.id}>.`,
+                content: `✅ Added auto-reaction. I will now react with ${interaction.options.getString('emoji')} to all new messages in <#${channel.id}>. (Bots included: ${includeBots ? 'Yes' : 'No'})`,
                 ephemeral: true
             });
         }
@@ -88,9 +97,17 @@ module.exports = {
             }
             
             const list = keys.map(id => {
-                const isCustom = channels[id].match(/^\d+$/);
-                const emojiStr = isCustom ? `Custom Emoji ID: ${channels[id]}` : channels[id];
-                return `<#${id}>: ${emojiStr}`;
+                const config = channels[id];
+                let emojiStr = '', includeBots = false;
+                
+                if (typeof config === 'string') {
+                    emojiStr = config.match(/^\d+$/) ? `Custom Emoji ID: ${config}` : config;
+                } else {
+                    emojiStr = config.emoji.match(/^\d+$/) ? `Custom Emoji ID: ${config.emoji}` : config.emoji;
+                    includeBots = config.includeBots;
+                }
+                
+                return `<#${id}>: ${emojiStr} (Bots: ${includeBots ? 'Yes' : 'No'})`;
             }).join('\n');
             
             await interaction.reply({
@@ -104,6 +121,7 @@ module.exports = {
             const channel = interaction.options.getChannel('channel');
             let emoji = interaction.options.getString('emoji');
             const limit = interaction.options.getInteger('limit') || 50;
+            const includeBots = interaction.options.getBoolean('include_bots') || false;
             
             const customEmojiMatch = emoji.match(/<a?:[a-zA-Z0-9_]+:(\d+)>/);
             if (customEmojiMatch) {
@@ -119,6 +137,8 @@ module.exports = {
                 await interaction.editReply(`⏳ Scanning ${messages.size} past messages and applying reactions... (this takes about 1 second per message to avoid Discord rate limits)`);
                 
                 for (const msg of messages.values()) {
+                    if (msg.author.bot && !includeBots) continue; // Skip bot messages unless allowed
+                    
                     // Check if bot already reacted with this emoji
                     const alreadyReacted = msg.reactions.cache.some(r => 
                         r.me && (r.emoji.name === emoji || r.emoji.id === emoji)

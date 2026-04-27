@@ -33,10 +33,10 @@ function saveToDisk() {
 loadFromDisk();
 
 module.exports = {
-    addChannel(channelId, emoji) {
-        channelCache[channelId] = emoji;
+    addChannel(channelId, emoji, includeBots = false) {
+        channelCache[channelId] = { emoji, includeBots };
         saveToDisk();
-        console.log(`[AutoReact] Added channel ${channelId} with emoji: ${emoji}`);
+        console.log(`[AutoReact] Added channel ${channelId} with emoji: ${emoji} (Include Bots: ${includeBots})`);
     },
     removeChannel(channelId) {
         if (channelCache[channelId]) {
@@ -51,10 +51,19 @@ module.exports = {
         return { ...channelCache };
     },
     async handleMessage(message) {
-        if (message.author.bot) return;
+        const config = channelCache[message.channel.id];
+        if (!config) return;
 
-        const emoji = channelCache[message.channel.id];
-        if (!emoji) return;
+        let emoji, includeBots;
+        if (typeof config === 'string') {
+            emoji = config;
+            includeBots = false;
+        } else {
+            emoji = config.emoji;
+            includeBots = config.includeBots;
+        }
+
+        if (message.author.bot && !includeBots) return;
 
         try {
             await message.react(emoji);
