@@ -199,7 +199,16 @@ client.on(Events.MessageCreate, async (message) => {
     }
 });
 
+// Enable debug logging to figure out why it hangs on Render
+client.on('debug', console.log);
+client.on('warn', console.log);
+client.on('error', console.error);
+
+// Set DNS to IPv4 first (fixes hanging bugs in Node 18+ on Render)
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
+
 // Start keep-alive server for Replit
 keepAlive();
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN).catch(console.error);
