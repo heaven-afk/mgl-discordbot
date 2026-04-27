@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { Client, Collection, GatewayIntentBits, Events } = require('discord.js');
 const stickyService = require('./services/stickyService');
+const autoreactService = require('./services/autoreactService');
 const smartService = require('./services/smartService');
 const smartConfig = require('./services/smartConfig');
 const memoryService = require('./services/memoryService');
@@ -126,6 +127,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 client.on(Events.MessageCreate, async (message) => {
     // Handle sticky notes first
     await stickyService.handleMessage(message);
+
+    // Handle auto-reactions
+    await autoreactService.handleMessage(message);
 
     // Auto assistant logic
     if (message.author.bot) return; // Ignore bot messages
