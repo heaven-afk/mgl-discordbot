@@ -113,12 +113,12 @@ module.exports = {
             try {
                 const messages = await channel.messages.fetch({ limit });
                 let count = 0;
+                let failCount = 0;
+                let lastError = null;
                 
                 await interaction.editReply(`⏳ Scanning ${messages.size} past messages and applying reactions... (this takes about 1 second per message to avoid Discord rate limits)`);
                 
                 for (const msg of messages.values()) {
-                    if (msg.author.bot) continue; // Don't react to bot messages
-                    
                     // Check if bot already reacted with this emoji
                     const alreadyReacted = msg.reactions.cache.some(r => 
                         r.me && (r.emoji.name === emoji || r.emoji.id === emoji)
@@ -131,12 +131,24 @@ module.exports = {
                             // Discord rate limits reactions to ~1 per second
                             await new Promise(r => setTimeout(r, 1200));
                         } catch (e) {
+                            failCount++;
+                            lastError = e.message;
                             console.error(`[AutoReact] Failed to react to message ${msg.id}:`, e.message);
                         }
                     }
                 }
                 
-                await interaction.editReply(`✅ Scan complete! Added reactions to ${count} past messages.`);
+                let reply = `✅ Scan complete! Added reactions to ${count} past messages.`;
+                if (failCount > 0) {
+                    reply += `\n⚠️ Failed to react to ${failCount} messages.`;
+                    if (lastError) reply += `\n**Last Error:** ${lastError}`;
+                    
+                    if (lastError && lastError.includes('Unknown Emoji')) {
+                        reply += `\n*(Make sure the bot is actually in the server where this custom emoji comes from! Bots cannot use emojis from servers they aren't in)*`;
+                    }
+                }
+                
+                await interaction.editReply(reply);
             } catch (error) {
                 console.error('[AutoReact] Scan error:', error);
                 await interaction.editReply(`❌ Error scanning channel: ${error.message}`);
