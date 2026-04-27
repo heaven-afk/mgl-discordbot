@@ -211,4 +211,16 @@ dns.setDefaultResultOrder('ipv4first');
 // Start keep-alive server for Replit
 keepAlive();
 
-client.login(process.env.DISCORD_TOKEN).catch(console.error);
+// Network test to check if Render IP is blocked by Discord/Cloudflare
+console.log('Testing connection to discord.com...');
+fetch('https://discord.com/api/v10/gateway')
+    .then(res => {
+        console.log(`Discord HTTP Status: ${res.status}`);
+    })
+    .catch(err => {
+        console.error('Discord HTTP Error:', err.message);
+    })
+    .finally(() => {
+        console.log('Finished testing connection.');
+        client.login(process.env.DISCORD_TOKEN).catch(console.error);
+    });
