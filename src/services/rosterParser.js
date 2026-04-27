@@ -86,7 +86,62 @@ class RosterParser {
     }
 
     /**
-     * Parse a single registration message into team + players data using AI fallback.
+     * The core AI system prompt for registration extraction.
+     * Uses a two-phase approach: SCAN all context first, then EXTRACT.
+     */
+    static AI_EXTRACTION_PROMPT = `You are extracting player registration data from competitive gaming tournament messages.
+
+PHASE 1 — SCAN (do not extract yet):
+Before extracting anything, read ALL messages provided and identify:
+- Every unique team name, team tag, and clan name mentioned
+- The pattern of IGN formatting per team (shared prefix, symbol, or tag)
+- Which messages belong to the same team registration block
+
+PHASE 2 — EXTRACT:
+Only after scanning all messages, extract each player with these fields:
+- professionalName: the player's pro/display name
+- ign: In-Game Name — identified by shared tag/prefix/symbol consistent with teammates
+- teamName: full team name (not tag)
+- clanName: clan name if separately stated, otherwise empty
+- country: country name in UPPERCASE, no flags or emojis
+- region: only if explicitly stated (e.g. Africa, Europe), otherwise empty
+- device: device name in UPPERCASE
+
+RULES:
+- All values must be UPPERCASE
+- IGNs share a consistent tag, symbol, or prefix with teammates — use this to identify them when the label is missing
+- If a field is not present, return an empty string — do not guess
+- A player block may span multiple lines and fields may appear in any order
+- Do not extract managers, captains, or staff — only players (P1–P6, S1–S2)
+- Do not include UID, Discord, or serial numbers
+- Output NOTHING BUT RAW JSON. NO Markdown formatting, NO wrapping \`\`\`json, NO text. Just the JSON object.
+- If you can't find players or assume it's just normal chat, return {"teams": []}.
+
+Return ONLY a valid JSON object in this exact shape:
+{
+  "teams": [
+    {
+      "team": {
+        "teamName": "",
+        "clanName": ""
+      },
+      "players": [
+        {
+          "professionalName": "",
+          "ign": "",
+          "teamName": "",
+          "clanName": "",
+          "country": "",
+          "region": "",
+          "device": ""
+        }
+      ]
+    }
+  ]
+}`;
+
+    /**
+     * Parse a single registration message into team + players data using AI.
      * @param {string} content - Raw message content
      * @returns {Promise<object|null>} { team: {...}, players: [...] } or null if not a registration
      */
@@ -95,30 +150,14 @@ class RosterParser {
 
         aiClient.init();
 
-        const systemPrompt = `You are a strict data extraction tool. Extract team and player registration data from the user message into a strict JSON object.
-Schema:
-{
-  "team": { "teamName": "string|null", "clanName": "string|null", "teamManager": "string|null", "teamTag": "string|null", "tier": "string|null" },
-  "players": [
-    { "professionalName": "string|null", "ign": "string|null", "uid": "string|null", "discord": "string|null", "device": "string|null", "region": "string|null", "country": "string|null", "gender": "string|null", "serialNumber": "string|null" }
-  ]
-}
-
-- Output NOTHING BUT RAW JSON. NO Markdown formatting, NO wrapping \`\`\`json, NO text. Just the JSON object.
-- If you can't find players or assume it's just normal chat, return {"team": {}, "players": []}.
-- "device" should capture phone model if available.
-- "region" should capture continent/region.
-- Look at the text carefully to extract all players and assign them to the "players" array. Try your best even if formatting is messy.`;
-
         try {
             const resultText = await aiClient.generateChatResponse([
-                { role: 'system', content: systemPrompt },
+                { role: 'system', content: RosterParser.AI_EXTRACTION_PROMPT },
                 { role: 'user', content: content }
-            ], { temperature: 0.1, maxTokens: 1000 });
+            ], { temperature: 0.1, maxTokens: 2000 });
 
             if (!resultText) return null;
 
-            // Extract JSON from response (robust against text before/after or markdown wrappers)
             const jsonMatch = resultText.match(/\{[\s\S]*\}/);
             if (!jsonMatch) {
                 console.error('[RosterParser] AI returned no JSON structure:', resultText);
@@ -127,43 +166,140 @@ Schema:
 
             const parsed = JSON.parse(jsonMatch[0]);
 
-            if (!parsed.players || !Array.isArray(parsed.players) || parsed.players.length === 0) {
-                return null;
+            // Handle both old single-team and new multi-team format
+            if (parsed.teams && Array.isArray(parsed.teams) && parsed.teams.length > 0) {
+                // New multi-team format — return first team for single-message compat
+                const first = parsed.teams[0];
+                return this._normalizeAIResult(first);
+            } else if (parsed.team && parsed.players) {
+                // Legacy single-team format fallback
+                return this._normalizeAIResult(parsed);
             }
 
-            // Clean up missing fields according to standard RosterParser model
-            const team = {
-                teamName: parsed.team?.teamName || null,
-                clanName: parsed.team?.clanName || null,
-                teamManager: parsed.team?.teamManager || null,
-                teamTag: parsed.team?.teamTag || null,
-                tier: parsed.team?.tier || null
-            };
-
-            const players = parsed.players.map(p => ({
-                professionalName: p.professionalName || null,
-                ign: p.ign || null,
-                uid: p.uid || null,
-                teamName: team.teamName,
-                clanName: team.clanName,
-                discord: p.discord || null,
-                device: p.device || null,
-                region: p.region || null,
-                country: p.country || null,
-                gender: p.gender || null,
-                serialNumber: p.serialNumber || null
-            }));
-
-            // Filter out players without IGN
-            const validPlayers = players.filter(p => p.ign);
-            if (validPlayers.length === 0) return null;
-
-            return { team, players: validPlayers };
-
+            return null;
         } catch (error) {
             console.error('[RosterParser] AI Parse error:', error.message);
-            return null; // Fallback to failure
+            return null;
         }
+    }
+
+    /**
+     * Parse multiple registration messages in a single AI batch for superior cross-message context.
+     * Groups all messages together so the AI can identify team patterns, shared tags, and IGN prefixes
+     * across the entire registration channel.
+     * @param {Array<{id: string, author: string, content: string}>} messages - Array of message objects
+     * @param {Function} progressCallback - Optional callback for progress updates
+     * @returns {Promise<Array<{team: object, players: Array}>>} Array of team results
+     */
+    async parseBatchWithAI(messages, progressCallback = null) {
+        if (!messages || messages.length === 0) return [];
+
+        aiClient.init();
+
+        const allResults = [];
+        // Process in chunks of 15 messages to stay within token limits
+        const CHUNK_SIZE = 15;
+        const chunks = [];
+        for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
+            chunks.push(messages.slice(i, i + CHUNK_SIZE));
+        }
+
+        for (let ci = 0; ci < chunks.length; ci++) {
+            const chunk = chunks[ci];
+
+            if (progressCallback) {
+                progressCallback(ci + 1, chunks.length, chunk.length);
+            }
+
+            // Format messages with clear separators
+            const formatted = chunk.map((m, idx) => {
+                return `--- MESSAGE ${idx + 1} (by ${m.author}) ---\n${m.content}`;
+            }).join('\n\n');
+
+            try {
+                const resultText = await aiClient.generateChatResponse([
+                    { role: 'system', content: RosterParser.AI_EXTRACTION_PROMPT },
+                    { role: 'user', content: formatted }
+                ], { temperature: 0.1, maxTokens: 4000 });
+
+                if (!resultText) continue;
+
+                const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) {
+                    console.error('[RosterParser] AI batch returned no JSON:', resultText.substring(0, 200));
+                    continue;
+                }
+
+                const parsed = JSON.parse(jsonMatch[0]);
+
+                if (parsed.teams && Array.isArray(parsed.teams)) {
+                    for (const teamBlock of parsed.teams) {
+                        const normalized = this._normalizeAIResult(teamBlock);
+                        if (normalized && normalized.players.length > 0) {
+                            allResults.push(normalized);
+                        }
+                    }
+                } else if (parsed.team && parsed.players) {
+                    const normalized = this._normalizeAIResult(parsed);
+                    if (normalized && normalized.players.length > 0) {
+                        allResults.push(normalized);
+                    }
+                }
+
+            } catch (error) {
+                console.error(`[RosterParser] AI Batch chunk ${ci + 1} error:`, error.message);
+            }
+
+            // Rate limit guard between chunks
+            if (ci < chunks.length - 1) {
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
+
+        return allResults;
+    }
+
+    /**
+     * Normalize an AI result block into the standard { team, players } format.
+     * Enforces UPPERCASE on all values and strips excluded fields.
+     * @private
+     */
+    _normalizeAIResult(block) {
+        if (!block) return null;
+
+        const team = {
+            teamName: this._toUpperOrEmpty(block.team?.teamName),
+            clanName: this._toUpperOrEmpty(block.team?.clanName),
+        };
+
+        if (!block.players || !Array.isArray(block.players) || block.players.length === 0) {
+            return null;
+        }
+
+        const players = block.players.map(p => ({
+            professionalName: this._toUpperOrEmpty(p.professionalName),
+            ign: this._toUpperOrEmpty(p.ign),
+            teamName: this._toUpperOrEmpty(p.teamName) || team.teamName,
+            clanName: this._toUpperOrEmpty(p.clanName) || team.clanName,
+            device: this._toUpperOrEmpty(p.device),
+            region: this._toUpperOrEmpty(p.region),
+            country: this._toUpperOrEmpty(p.country),
+        }));
+
+        // Filter out players without IGN
+        const validPlayers = players.filter(p => p.ign);
+        if (validPlayers.length === 0) return null;
+
+        return { team, players: validPlayers };
+    }
+
+    /**
+     * Convert a value to uppercase string, or return empty string if falsy.
+     * @private
+     */
+    _toUpperOrEmpty(val) {
+        if (!val || typeof val !== 'string' || val.trim() === '') return '';
+        return val.trim().toUpperCase();
     }
 
     /**

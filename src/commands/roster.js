@@ -178,29 +178,38 @@ module.exports = {
                 const players = [];
                 let teamCount = 0;
 
-                for (const msg of msgs) {
-                    if (msg.author.bot) continue;
-                    if (!msg.content || msg.content.trim().length < 10) continue;
+                // Filter to valid candidate messages
+                const candidates = msgs.filter(m => !m.author.bot && m.content && m.content.trim().length >= 10);
 
-                    let result = null;
-                    if (useAi) {
-                        const candidates = msgs.filter(m => !m.author.bot && m.content && m.content.trim().length >= 10);
-                        const totalCandidates = candidates.length;
-                        const processedIndex = candidates.findIndex(m => m.id === msg.id) + 1;
+                if (useAi) {
+                    // Batch AI mode — sends messages in groups for cross-message context
+                    const batchMessages = candidates.map(m => ({
+                        id: m.id,
+                        author: m.author.username,
+                        content: m.content
+                    }));
 
-                        if (processedIndex === 1 || processedIndex % 2 === 0 || processedIndex === totalCandidates) {
-                            await interaction.editReply(`🔍 AI Extraction: **${srcChannel.name}** (${processedIndex}/${totalCandidates} messages parsed)`);
+                    const results = await rosterParser.parseBatchWithAI(batchMessages, (chunkNum, totalChunks, chunkSize) => {
+                        interaction.editReply(`🤖 AI Extraction: **${srcChannel.name}** — Batch ${chunkNum}/${totalChunks} (${chunkSize} messages)`).catch(() => {});
+                    });
+
+                    for (const result of results) {
+                        if (result && result.players.length > 0) {
+                            players.push(...result.players);
+                            teamCount++;
                         }
-                        result = await rosterParser.parseMessageWithAI(msg.content);
-                    } else {
-                        result = rosterParser.parseMessage(msg.content);
                     }
-
-                    if (result && result.players.length > 0) {
-                        players.push(...result.players);
-                        teamCount++;
+                } else {
+                    // Regex/rule-based mode — process one-by-one
+                    for (const msg of candidates) {
+                        const result = rosterParser.parseMessage(msg.content);
+                        if (result && result.players.length > 0) {
+                            players.push(...result.players);
+                            teamCount++;
+                        }
                     }
                 }
+
                 return { sourceName: srcChannel.name, players, teamCount };
             };
 
@@ -337,30 +346,50 @@ module.exports = {
             }
 
             let preview = '**📋 Roster Parse Preview**\n\n';
-            if (useAi) preview += '*Using AI Engine for extraction*\n\n';
+            if (useAi) preview += '*Using AI Engine (Two-Phase Extraction)*\n\n';
 
-            for (const msg of candidates) {
-                let result = null;
-                if (useAi) {
-                    result = await rosterParser.parseMessageWithAI(msg.content);
+            if (useAi) {
+                // Batch AI mode for preview — gives better cross-message context
+                const batchMessages = candidates.map(m => ({
+                    id: m.id,
+                    author: m.author.username,
+                    content: m.content
+                }));
+
+                await interaction.editReply('🤖 Running AI batch extraction on preview messages...');
+                const results = await rosterParser.parseBatchWithAI(batchMessages);
+
+                if (results.length === 0) {
+                    preview += '> ❌ No registration data found in preview messages.\n';
                 } else {
-                    result = rosterParser.parseMessage(msg.content);
+                    for (const result of results) {
+                        preview += `> 🏢 Team: ${result.team.teamName || 'N/A'} | Clan: ${result.team.clanName || 'N/A'}\n`;
+                        preview += `> 👥 Players found: ${result.players.length}\n`;
+                        for (const p of result.players) {
+                            preview += `>   • ${p.professionalName || '?'} — IGN: ${p.ign || '?'} — ${p.device || '?'} — ${p.country || '?'}\n`;
+                        }
+                        preview += '\n';
+                    }
                 }
+            } else {
+                for (const msg of candidates) {
+                    const result = rosterParser.parseMessage(msg.content);
 
-                preview += `**Message by ${msg.author.username}** (${msg.createdAt.toISOString().split('T')[0]})\n`;
+                    preview += `**Message by ${msg.author.username}** (${msg.createdAt.toISOString().split('T')[0]})\n`;
 
-                if (!result) {
-                    preview += '> ❌ Not recognized as registration\n\n';
-                    continue;
+                    if (!result) {
+                        preview += '> ❌ Not recognized as registration\n\n';
+                        continue;
+                    }
+
+                    preview += `> 🏢 Team: ${result.team.teamName || 'N/A'} | Clan: ${result.team.clanName || 'N/A'}\n`;
+                    preview += `> 👥 Players found: ${result.players.length}\n`;
+
+                    for (const p of result.players) {
+                        preview += `>   • ${p.professionalName || '?'} — IGN: ${p.ign || '?'} — ${p.device || '?'} — ${p.country || '?'}\n`;
+                    }
+                    preview += '\n';
                 }
-
-                preview += `> 🏢 Team: ${result.team.teamName || 'N/A'} | Clan: ${result.team.clanName || 'N/A'}\n`;
-                preview += `> 👥 Players found: ${result.players.length}\n`;
-
-                for (const p of result.players) {
-                    preview += `>   • ${p.professionalName || '?'} — IGN: ${p.ign || '?'} — ${p.device || '?'}\n`;
-                }
-                preview += '\n';
             }
 
             // Truncate if too long
