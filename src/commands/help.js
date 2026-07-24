@@ -52,7 +52,7 @@ module.exports = {
             '🎯 `/tierscan` — Admin tool to scan channels for tier change requests',
             '🔐 `/manage` — Manage tiered permissions (assign users/roles to tiers)',
             '🧹 `/purge` — Bulk delete messages with specific filters',
-            '🚚 `/move` — Move messages between channels',
+            '🚚 `/move` — Transfer messages or forum posts between channels/forums',
             '💾 `/backup` — Backup messages/threads',
             '📦 `/archive` — Archive channel content',
             '👯 `/clone` — Clone channel structure/settings'

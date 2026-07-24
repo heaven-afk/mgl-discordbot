@@ -3,7 +3,7 @@
 A production-ready Discord bot for message management, backup, and sticky notes.
 
 ## Features
-- **/move**: Transfer messages between channels/threads.
+- **/move**: Transfer messages and forum posts between text channels, threads, and forum channels.
 - **/backup**: Export channel history to JSON/HTML.
 - **/stickynote**: Manage persistent pinned messages.
 
