@@ -15,9 +15,9 @@ module.exports = {
                 .setRequired(true))
         .addIntegerOption(option =>
             option.setName('limit')
-                .setDescription('Number of messages or forum posts to move (1-100)')
+                .setDescription('Number of messages or forum posts to move (1-1000)')
                 .setMinValue(1)
-                .setMaxValue(100)
+                .setMaxValue(1000)
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('after_message_id')

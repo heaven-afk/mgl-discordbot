@@ -10,7 +10,7 @@ const isValidSnowflake = (id) => /^(\d{17,20})$/.test(id);
  * @param {number} limit
  * @returns {boolean}
  */
-const isValidLimit = (limit) => limit >= 1 && limit <= 100;
+const isValidLimit = (limit) => limit >= 1 && limit <= 1000;
 
 module.exports = {
   isValidSnowflake,

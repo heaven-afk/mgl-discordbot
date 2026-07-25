@@ -16,6 +16,23 @@ class MessageMover {
     }
 
     /**
+     * Creates a formatted progress bar with percentage
+     * @param {number} current 
+     * @param {number} total 
+     * @param {number} [length=10] 
+     * @returns {string}
+     */
+    createProgressBar(current, total, length = 10) {
+        if (!total || total <= 0) return '`[░░░░░░░░░░] 0%`';
+        const percent = Math.min(100, Math.max(0, Math.floor((current / total) * 100)));
+        const filledLength = Math.round((length * percent) / 100);
+        const emptyLength = length - filledLength;
+        const filledBar = '█'.repeat(filledLength);
+        const emptyBar = '░'.repeat(emptyLength);
+        return `\`[${filledBar}${emptyBar}] ${percent}%\``;
+    }
+
+    /**
      * Extracts attachments from a message as AttachmentBuilder objects
      * @param {import('discord.js').Message} msg 
      * @returns {AttachmentBuilder[]}
@@ -64,13 +81,13 @@ class MessageMover {
     }
 
     /**
-     * Fetch messages from source channel/thread
+     * Fetch messages from source channel/thread up to limit (max 1000)
      * @param {import('discord.js').TextBasedChannel} channel 
-     * @param {number} limit 
+     * @param {number} [limit=1000] 
      * @param {string} [afterId] 
      * @returns {Promise<import('discord.js').Message[]>}
      */
-    async fetchMessages(channel, limit, afterId) {
+    async fetchMessages(channel, limit = 1000, afterId) {
         let messages = [];
         let lastId = afterId;
         let remaining = limit;
@@ -94,13 +111,13 @@ class MessageMover {
     }
 
     /**
-     * Fetch forum posts (threads) from a forum channel
+     * Fetch forum posts (threads) from a forum channel up to limit (max 1000)
      * @param {import('discord.js').ForumChannel} forumChannel 
-     * @param {number} limit 
+     * @param {number} [limit=1000] 
      * @param {string} [afterId] 
      * @returns {Promise<import('discord.js').ThreadChannel[]>}
      */
-    async fetchForumPosts(forumChannel, limit = 100, afterId = null) {
+    async fetchForumPosts(forumChannel, limit = 1000, afterId = null) {
         let threads = [];
 
         try {
@@ -125,15 +142,26 @@ class MessageMover {
     }
 
     /**
-     * Transfer messages between text-based channels/threads
+     * Transfer messages between text-based channels/threads with progress bar
      * @param {object} params
-     * @param {import('discord.js').ChatInputCommandInteraction} interaction
+     * @param {import('discord.js').ChatInputCommandInteraction} [interaction]
      */
     async moveMessages({ source, destination, messages, includeBots, deleteOriginal, keepAuthorContext }, interaction) {
         let count = 0;
+        const filteredMessages = includeBots ? messages : messages.filter(m => !m.author.bot);
+        const total = filteredMessages.length;
+        let lastUpdate = 0;
 
-        for (const msg of messages) {
-            if (!includeBots && msg.author.bot) continue;
+        for (let i = 0; i < total; i++) {
+            const msg = filteredMessages[i];
+
+            // Throttled status updates (max once per 2s or on completion)
+            const now = Date.now();
+            if (interaction && (now - lastUpdate > 2000 || i === total - 1)) {
+                lastUpdate = now;
+                const progressBar = this.createProgressBar(i + 1, total);
+                await interaction.editReply(`🚚 **Moving Messages**: ${i + 1}/${total} processed\nProgress: ${progressBar}`).catch(() => {});
+            }
 
             try {
                 const content = this.formatContent(msg, keepAuthorContext);
@@ -163,21 +191,24 @@ class MessageMover {
     }
 
     /**
-     * Transfer posts from one Forum channel to another Forum channel
+     * Transfer posts from one Forum channel to another Forum channel with progress bar
      */
     async moveForumPosts({ sourceForum, destinationForum, posts, includeBots, deleteOriginal, keepAuthorContext }, interaction) {
         let movedCount = 0;
+        const totalPosts = posts.length;
 
-        for (let i = 0; i < posts.length; i++) {
+        for (let i = 0; i < totalPosts; i++) {
             const post = posts[i];
+            const progressBar = this.createProgressBar(i, totalPosts);
 
             if (interaction) {
-                await interaction.editReply(`Moving forum post ${i + 1}/${posts.length}: **${post.name}**...`).catch(() => {});
+                await interaction.editReply(`🚚 **Moving Forum Posts**: ${i}/${totalPosts} completed\nProgress: ${progressBar}\nCurrently moving post ${i + 1}/${totalPosts}: **${post.name}**...`).catch(() => {});
             }
 
             try {
                 let starterMsg = await post.fetchStarterMessage().catch(() => null);
-                let allMsgs = await this.fetchMessages(post, 100);
+                // Allow fetching up to 1000 messages per thread/post
+                let allMsgs = await this.fetchMessages(post, 1000);
 
                 if (starterMsg && !allMsgs.some(m => m.id === starterMsg.id)) {
                     allMsgs.unshift(starterMsg);
@@ -210,8 +241,19 @@ class MessageMover {
                 await delay(1000);
 
                 // Copy remaining replies into the new forum thread
-                for (const reply of replyMsgs) {
+                const totalReplies = replyMsgs.length;
+                let replyLastUpdate = 0;
+
+                for (let r = 0; r < totalReplies; r++) {
+                    const reply = replyMsgs[r];
                     if (!includeBots && reply.author.bot) continue;
+
+                    const rNow = Date.now();
+                    if (interaction && (rNow - replyLastUpdate > 2500 || r === totalReplies - 1)) {
+                        replyLastUpdate = rNow;
+                        const threadProgressBar = this.createProgressBar(r + 1, totalReplies);
+                        await interaction.editReply(`🚚 **Moving Forum Post** (${i + 1}/${totalPosts}): **${post.name}**\nOverall Posts: ${progressBar}\nThread replies: ${r + 1}/${totalReplies} ${threadProgressBar}`).catch(() => {});
+                    }
 
                     const content = this.formatContent(reply, keepAuthorContext);
                     const files = this.extractAttachments(reply);
@@ -236,6 +278,11 @@ class MessageMover {
             } catch (err) {
                 console.error(`Failed to move forum post "${post.name}" (${post.id}):`, err);
             }
+        }
+
+        if (interaction) {
+            const finalBar = this.createProgressBar(totalPosts, totalPosts);
+            await interaction.editReply(`✅ **Forum Transfer Complete**!\nProgress: ${finalBar}\nSuccessfully moved ${movedCount}/${totalPosts} posts.`).catch(() => {});
         }
 
         return movedCount;
@@ -267,8 +314,14 @@ class MessageMover {
         const filtered = includeBots ? messages : messages.filter(m => !m.author.bot);
         if (filtered.length === 0) return 0;
 
+        const totalMsgs = filtered.length;
         const starter = filtered[0];
         const replies = filtered.slice(1);
+
+        if (interaction) {
+            const bar = this.createProgressBar(1, totalMsgs);
+            await interaction.editReply(`🚚 **Creating Forum Post from Text Channel**...\nProgress: ${bar}`).catch(() => {});
+        }
 
         const title = `Moved from #${sourceChannel.name}`;
         const initialContent = this.formatContent(starter, keepAuthorContext);
@@ -290,7 +343,17 @@ class MessageMover {
 
         await delay(1000);
 
-        for (const reply of replies) {
+        let lastUpdate = 0;
+        for (let i = 0; i < replies.length; i++) {
+            const reply = replies[i];
+            const now = Date.now();
+
+            if (interaction && (now - lastUpdate > 2500 || i === replies.length - 1)) {
+                lastUpdate = now;
+                const bar = this.createProgressBar(i + 2, totalMsgs);
+                await interaction.editReply(`🚚 **Moving Messages into Forum Post**: ${i + 2}/${totalMsgs}\nProgress: ${bar}`).catch(() => {});
+            }
+
             const content = this.formatContent(reply, keepAuthorContext);
             const files = this.extractAttachments(reply);
             const embeds = reply.embeds || [];
@@ -318,17 +381,19 @@ class MessageMover {
      */
     async moveForumToText({ sourceForum, destinationText, posts, includeBots, deleteOriginal, keepAuthorContext }, interaction) {
         let totalMoved = 0;
+        const totalPosts = posts.length;
 
-        for (let i = 0; i < posts.length; i++) {
+        for (let i = 0; i < totalPosts; i++) {
             const post = posts[i];
+            const progressBar = this.createProgressBar(i, totalPosts);
 
             if (interaction) {
-                await interaction.editReply(`Moving forum post ${i + 1}/${posts.length}: **${post.name}** to text channel...`).catch(() => {});
+                await interaction.editReply(`🚚 **Moving Forum Posts to Text Channel**: ${i}/${totalPosts}\nProgress: ${progressBar}\nCurrently moving: **${post.name}**...`).catch(() => {});
             }
 
             try {
                 let starterMsg = await post.fetchStarterMessage().catch(() => null);
-                let allMsgs = await this.fetchMessages(post, 100);
+                let allMsgs = await this.fetchMessages(post, 1000);
 
                 if (starterMsg && !allMsgs.some(m => m.id === starterMsg.id)) {
                     allMsgs.unshift(starterMsg);
